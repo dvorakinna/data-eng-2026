@@ -4,3 +4,4 @@ __pycache__/
 profiles.yml
 .DS_Store
 .idea/
+docker/
