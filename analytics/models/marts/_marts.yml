@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension with lifetime revenue and tier"
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: lifetime_revenue
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: dim_products
+    description: "Product dimension with sales metrics and tier"
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: total_revenue
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: fct_orders
+    description: "Order fact table with line totals and customer context"
+    columns:
+      - name: order_id
+        data_tests: [unique, not_null]
+      - name: customer_id
+        data_tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: order_total
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
