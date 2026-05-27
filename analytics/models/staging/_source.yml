@@ -1,0 +1,13 @@
+version: 2
+
+# Declare raw tables so models can use {{ source('raw_ecom', 'customers') }}
+# Benefits: lineage in dbt docs, DAG dependencies, optional freshness checks
+sources:
+  - name: raw_ecom              # logical group name — referenced from SQL
+    database: source            # Postgres DB name (matches profiles.yml dbname)
+    schema: raw                 # actual schema in Postgres where seed.sql loaded data
+    tables:
+      - name: customers
+      - name: products
+      - name: orders
+      - name: order_items

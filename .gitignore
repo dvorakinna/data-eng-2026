@@ -5,3 +5,7 @@ profiles.yml
 .DS_Store
 .idea/
 docker/
+profiles/profiles.yml
+analytics/target/
+analytics/dbt_packages/
+analytics/logs/

@@ -1,0 +1,23 @@
+name: data_eng_2026
+version: '1.0.0'
+profile: data_eng_2026          # must match the key in profiles.yml
+config-version: 2
+
+# directory layout (dbt defaults — kept explicit for clarity)
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+target-path: "target"            # compiled SQL + run artifacts
+clean-targets: ["target", "dbt_packages", "logs"]   # removed by `dbt clean`
+
+# per-folder defaults; can be overridden inside individual .sql files
+models:
+  data_eng_2026:
+    staging:
+      +materialized: view        # cheap, always-fresh, no storage cost
+      +schema: staging           # final schema: <profile.schema>_staging
+    marts:
+      +materialized: table       # business layer — physical tables for query speed
+      +schema: marts
