@@ -1,0 +1,88 @@
+# .github/workflows/dbt.yml
+#
+# CI pipeline for dbt project.
+# Runs on every push/PR to main.
+# Spins up a temporary Postgres, loads raw data, runs dbt build (run + test).
+# If any test fails → PR gets ❌
+
+name: dbt CI
+
+on:
+  push:
+    branches: [main]          # trigger on direct push to main
+  pull_request:
+    branches: [main]          # trigger on PR targeting main
+
+jobs:
+  dbt-build:
+    runs-on: ubuntu-latest    # free GitHub-hosted VM (public repos = unlimited minutes)
+
+    services:
+      postgres:
+        image: postgres:16-alpine          # same image as local docker-compose
+        env:
+          POSTGRES_USER: dbt
+          POSTGRES_PASSWORD: dbt
+          POSTGRES_DB: source              # same credentials as local dev
+        ports:
+          - 5432:5432                      # expose to localhost on the VM
+        options: >-
+          --health-cmd "pg_isready -U dbt -d source"
+          --health-interval 5s
+          --health-retries 5
+          # wait until Postgres is actually ready before starting steps
+          # without this, dbt could connect before DB is up → crash
+
+    steps:
+      # 1. Clone the repo into the VM's working directory
+      - uses: actions/checkout@v4
+
+      # 2. Install Python 3.11 (matches our Dockerfile)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 3. Install dbt directly (no Docker needed in CI)
+      - name: Install dbt
+        run: pip install "dbt-core==1.8.*" "dbt-postgres==1.8.*"
+
+      # 4. Create raw.* tables and load synthetic data
+      #    Without this step dbt has no sources to read from
+      - name: Seed raw data
+        run: psql -f sql/day_2/schema.sql && psql -f sql/day_2/seed.sql
+        env:
+          PGHOST: localhost                # service container is on localhost (not "postgres" like in docker-compose)
+          PGUSER: dbt
+          PGPASSWORD: dbt
+          PGDATABASE: source
+
+      # 5. Generate profiles.yml on the fly
+      #    Separate "ci" target so it doesn't conflict with local "dev"
+      - name: Create profiles.yml
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << 'EOF'
+          data_eng_2026:
+            target: ci
+            outputs:
+              ci:
+                type: postgres
+                host: localhost
+                port: 5432
+                user: dbt
+                pass: dbt
+                dbname: source
+                schema: analytics
+                threads: 1
+          EOF
+
+      # 6. Install dbt packages (dbt_utils from packages.yml)
+      - name: dbt deps
+        run: dbt deps
+        working-directory: analytics
+
+      # 7. Run all models + all tests in one command
+      #    Any test failure → this step fails → job fails → PR gets ❌
+      - name: dbt build
+        run: dbt build
+        working-directory: analytics
