@@ -30,8 +30,6 @@ jobs:
           --health-cmd "pg_isready -U dbt -d source"
           --health-interval 5s
           --health-retries 5
-          # wait until Postgres is actually ready before starting steps
-          # without this, dbt could connect before DB is up → crash
 
     steps:
       # 1. Clone the repo into the VM's working directory
