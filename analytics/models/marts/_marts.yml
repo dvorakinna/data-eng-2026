@@ -35,3 +35,45 @@ models:
         data_tests:
           - dbt_utils.expression_is_true:
               expression: ">= 0"
+
+  - name: monthly_revenue
+    description: "Monthly revenue with running total (paid + shipped orders)"
+    columns:
+      - name: month
+        data_tests: [ unique, not_null ]
+      - name: revenue
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+      - name: running_total
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 0"
+
+  - name: country_conversion
+    description: "Conversion funnel: paid vs cancelled ratio per country"
+    columns:
+      - name: country
+        data_tests: [ unique, not_null ]
+      - name: paid_pct
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "between 0 and 100"
+
+  - name: product_category_rank
+    description: "Product revenue rank within each category"
+    columns:
+      - name: category_rank
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: ">= 1"
+
+  - name: cohort_retention
+    description: "Signup-month cohort retention rate"
+    columns:
+      - name: cohort_month
+        data_tests: [ unique, not_null ]
+      - name: retention_pct
+        data_tests:
+          - dbt_utils.expression_is_true:
+              expression: "between 0 and 100"
